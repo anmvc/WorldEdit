@@ -481,14 +481,22 @@ public class BukkitWorld extends AbstractWorld {
     public <B extends BlockStateHolder<B>> boolean setBlock(BlockVector3 position, B block, SideEffectSet sideEffects) {
         clearContainerBlockContents(position);
         if (worldNativeAccess != null) {
-            try {
-                return worldNativeAccess.setBlock(position, block, sideEffects);
-            } catch (Exception e) {
-                if (block instanceof BaseBlock baseBlock && baseBlock.getNbt() != null) {
-                    LOGGER.warn("Tried to set a corrupt tile entity at " + position.toString()
-                        + ": " + baseBlock.getNbt(), e);
-                } else {
-                    LOGGER.warn("Failed to set block via adapter, falling back to generic", e);
+            if (WorldEditPlugin.isFolia()) {
+                Block bukkitBlock = getWorld().getBlockAt(position.x(), position.y(), position.z());
+                bukkitBlock.setBlockData(BukkitAdapter.adapt(block), sideEffects.doesApplyAny());
+                return true;
+            }
+
+            else {
+                try {
+                    return worldNativeAccess.setBlock(position, block, sideEffects);
+                } catch (Exception e) {
+                    if (block instanceof BaseBlock baseBlock && baseBlock.getNbt() != null) {
+                        LOGGER.warn("Tried to set a corrupt tile entity at " + position.toString()
+                                + ": " + baseBlock.getNbt(), e);
+                    } else {
+                        LOGGER.warn("Failed to set block via adapter, falling back to generic", e);
+                    }
                 }
             }
         }
