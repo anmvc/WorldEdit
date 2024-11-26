@@ -485,8 +485,7 @@ public class BukkitWorld extends AbstractWorld {
                 Block bukkitBlock = getWorld().getBlockAt(position.x(), position.y(), position.z());
                 bukkitBlock.setBlockData(BukkitAdapter.adapt(block), sideEffects.doesApplyAny());
                 return true;
-            }
-            else {
+            } else {
                 try {
                     return worldNativeAccess.setBlock(position, block, sideEffects);
                 } catch (Exception e) {
