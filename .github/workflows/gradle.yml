@@ -41,3 +41,9 @@ jobs:
         name: logs for ${{ matrix.os }}
         path: '**/*.log'
 
+    - uses: actions/upload-artifact@v4
+      name: Upload build
+      if: always()
+      with:
+        name: build from ${{ matrix.os }}
+        path: '**/*.jar'
