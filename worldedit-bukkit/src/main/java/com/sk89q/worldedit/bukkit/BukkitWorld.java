@@ -486,7 +486,6 @@ public class BukkitWorld extends AbstractWorld {
                 bukkitBlock.setBlockData(BukkitAdapter.adapt(block), sideEffects.doesApplyAny());
                 return true;
             }
-
             else {
                 try {
                     return worldNativeAccess.setBlock(position, block, sideEffects);
