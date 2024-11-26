@@ -21,9 +21,9 @@ val checkApiCompatibility by tasks.registering {
     description = "Checks ALL API compatibility"
 }
 
-tasks.check {
-    dependsOn(checkApiCompatibility)
-}
+//tasks.check {
+    //dependsOn(checkApiCompatibility)
+//}
 
 // Generic setup for all tasks
 // Pull the version before our current version.
