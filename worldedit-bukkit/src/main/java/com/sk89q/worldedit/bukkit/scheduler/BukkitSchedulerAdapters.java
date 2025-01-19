@@ -21,8 +21,8 @@ package com.sk89q.worldedit.bukkit.scheduler;
 
 import com.sk89q.worldedit.bukkit.scheduler.adapters.BukkitSchedulerAdapter;
 import com.sk89q.worldedit.bukkit.scheduler.adapters.FoliaSchedulerAdapter;
-import com.sk89q.worldedit.extension.platform.scheduler.SchedulerAdapter;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
+import com.sk89q.worldedit.extension.platform.scheduler.SchedulerAdapter;
 import org.bukkit.plugin.Plugin;
 
 public final class BukkitSchedulerAdapters {
