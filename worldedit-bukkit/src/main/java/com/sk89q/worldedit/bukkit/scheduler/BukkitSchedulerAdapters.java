@@ -22,10 +22,11 @@ package com.sk89q.worldedit.bukkit.scheduler;
 import com.sk89q.worldedit.bukkit.scheduler.adapters.BukkitSchedulerAdapter;
 import com.sk89q.worldedit.bukkit.scheduler.adapters.FoliaSchedulerAdapter;
 import com.sk89q.worldedit.extension.platform.scheduler.SchedulerAdapter;
+import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import org.bukkit.plugin.Plugin;
 
 public final class BukkitSchedulerAdapters {
-    private static final boolean FOLIA_SUPPORT = foliaSupport();
+    private static final boolean FOLIA_SUPPORT = WorldEditPlugin.isFolia();
 
     private BukkitSchedulerAdapters() {
         // Call only through a method
@@ -36,14 +37,5 @@ public final class BukkitSchedulerAdapters {
             return new FoliaSchedulerAdapter(plugin);
         }
         return new BukkitSchedulerAdapter(plugin);
-    }
-
-    private static boolean foliaSupport() {
-        try {
-            Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
-            return true;
-        } catch (ClassNotFoundException e) {
-            return false;
-        }
     }
 }
