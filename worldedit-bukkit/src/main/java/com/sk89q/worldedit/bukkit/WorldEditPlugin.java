@@ -103,10 +103,12 @@ public class WorldEditPlugin extends JavaPlugin implements TabCompleter {
 
     // This must be before the Logger is initialized, which fails in 1.8
     private static final String FAILED_VERSION_CHECK =
-        "\n**********************************************\n"
-            + "** This Minecraft version (%s) is not supported by this version of WorldEdit.\n"
-            + "** Please download an OLDER version of WorldEdit which does.\n"
-            + "**********************************************\n";
+            """
+            **********************************************
+            ** This Minecraft version (%s) is not supported by this version of WorldEdit.
+            ** Please download an OLDER version of WorldEdit which does.
+            **********************************************
+            """;
 
     static {
         if (PaperLib.getMinecraftVersion() < 13) {
@@ -208,10 +210,11 @@ public class WorldEditPlugin extends JavaPlugin implements TabCompleter {
         WorldEdit.getInstance().getEventBus().post(new PlatformReadyEvent(platform));
     }
 
-    @SuppressWarnings({ "unchecked" })
+    @SuppressWarnings({ "unchecked", "deprecation", "removal" })
     private void initializeRegistries() {
         // Biome
         Registry.BIOME.forEach(biome -> {
+            // TODO Fix this check for 1.22 / when we drop < 1.21 support
             if (!biome.name().equals("CUSTOM")) {
                 String key = biome.getKey().toString();
                 BiomeType.REGISTRY.register(key, new BiomeType(key));

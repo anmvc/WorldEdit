@@ -19,7 +19,6 @@
 
 package com.sk89q.worldedit.neoforge;
 
-import com.sk89q.util.StringUtil;
 import com.sk89q.worldedit.blocks.BaseItemStack;
 import com.sk89q.worldedit.entity.BaseEntity;
 import com.sk89q.worldedit.extension.platform.AbstractPlayerActor;
@@ -27,8 +26,8 @@ import com.sk89q.worldedit.extent.inventory.BlockBag;
 import com.sk89q.worldedit.internal.cui.CUIEvent;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector3;
+import com.sk89q.worldedit.neoforge.internal.ComponentConverter;
 import com.sk89q.worldedit.neoforge.internal.NBTConverter;
-import com.sk89q.worldedit.neoforge.net.handler.WECUIPacketHandler;
 import com.sk89q.worldedit.session.SessionKey;
 import com.sk89q.worldedit.util.HandSide;
 import com.sk89q.worldedit.util.Location;
@@ -51,6 +50,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.enginehub.linbus.tree.LinCompoundTag;
+import org.enginehub.worldeditcui.protocol.CUIPacket;
 
 import java.util.Locale;
 import java.util.Set;
@@ -63,6 +63,11 @@ public class NeoForgePlayer extends AbstractPlayerActor {
 
     protected NeoForgePlayer(ServerPlayer player) {
         this.player = player;
+
+        if (getUniqueId() == null) {
+            throw new AssertionError("Player UUID cannot be null");
+        }
+
         ThreadSafeCache.getInstance().getOnlineIds().add(getUniqueId());
     }
 
@@ -95,7 +100,7 @@ public class NeoForgePlayer extends AbstractPlayerActor {
     public Location getLocation() {
         Vector3 position = Vector3.at(this.player.getX(), this.player.getY(), this.player.getZ());
         return new Location(
-            NeoForgeWorldEdit.inst.getWorld(this.player.serverLevel()),
+            NeoForgeWorldEdit.inst.getWorld(this.player.level()),
             position,
             this.player.getYRot(),
             this.player.getXRot());
@@ -112,12 +117,12 @@ public class NeoForgePlayer extends AbstractPlayerActor {
             true
         );
         // This may be false if the teleport was cancelled by a mod
-        return this.player.serverLevel() == level;
+        return this.player.level() == level;
     }
 
     @Override
     public World getWorld() {
-        return NeoForgeWorldEdit.inst.getWorld(this.player.serverLevel());
+        return NeoForgeWorldEdit.inst.getWorld(this.player.level());
     }
 
     @Override
@@ -127,12 +132,7 @@ public class NeoForgePlayer extends AbstractPlayerActor {
 
     @Override
     public void dispatchCUIEvent(CUIEvent event) {
-        String[] params = event.getParameters();
-        String send = event.getTypeId();
-        if (params.length > 0) {
-            send = send + "|" + StringUtil.joinString(params, "|");
-        }
-        PacketDistributor.sendToPlayer(this.player, new WECUIPacketHandler.CuiPacket(send));
+        PacketDistributor.sendToPlayer(this.player, new CUIPacket(event.getTypeId(), event.getParameters()));
     }
 
     private void sendMessage(net.minecraft.network.chat.Component textComponent) {
@@ -167,7 +167,7 @@ public class NeoForgePlayer extends AbstractPlayerActor {
 
     @Override
     public void print(Component component) {
-        sendMessage(net.minecraft.network.chat.Component.Serializer.fromJson(
+        sendMessage(ComponentConverter.Serializer.fromJson(
             GsonComponentSerializer.INSTANCE.serialize(WorldEditText.format(component, getLocale())),
             this.player.registryAccess()
         ));

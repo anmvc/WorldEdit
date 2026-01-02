@@ -27,10 +27,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.FullChunkStatus;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.storage.TagValueInput;
 import org.enginehub.linbus.tree.LinCompoundTag;
 
 import java.lang.ref.WeakReference;
@@ -77,10 +79,10 @@ public class SpongeWorldNativeAccess implements WorldNativeAccess<LevelChunk, Bl
     public BlockState setBlockState(LevelChunk chunk, BlockPos position, BlockState state) {
         if (chunk instanceof ExtendedChunk) {
             return ((ExtendedChunk) chunk).setBlockState(
-                position, state, false, sideEffectSet.shouldApply(SideEffect.UPDATE)
+                position, state, 0, sideEffectSet.shouldApply(SideEffect.UPDATE)
             );
         }
-        return chunk.setBlockState(position, state, false);
+        return chunk.setBlockState(position, state, 0);
     }
 
     @Override
@@ -106,7 +108,7 @@ public class SpongeWorldNativeAccess implements WorldNativeAccess<LevelChunk, Bl
             return false;
         }
         tileEntity.setLevel(getWorld());
-        tileEntity.loadWithComponents(nativeTag, getWorld().registryAccess());
+        tileEntity.loadWithComponents(TagValueInput.create(ProblemReporter.DISCARDING, getWorld().registryAccess(), nativeTag));
         return true;
     }
 
@@ -153,6 +155,6 @@ public class SpongeWorldNativeAccess implements WorldNativeAccess<LevelChunk, Bl
 
     @Override
     public void onBlockStateChange(BlockPos pos, BlockState oldState, BlockState newState) {
-        getWorld().onBlockStateChange(pos, oldState, newState);
+        getWorld().updatePOIOnBlockStateChange(pos, oldState, newState);
     }
 }

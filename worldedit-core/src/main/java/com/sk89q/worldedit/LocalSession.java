@@ -62,6 +62,8 @@ import org.enginehub.linbus.tree.LinCompoundTag;
 import org.enginehub.linbus.tree.LinTagType;
 
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
@@ -296,11 +298,15 @@ public class LocalSession {
     }
 
     public boolean hasWorldOverride() {
-        return this.worldOverride != null;
+        return this.worldOverride != null && this.worldOverride.isValid();
     }
 
     @Nullable
     public World getWorldOverride() {
+        if (this.worldOverride != null && !this.worldOverride.isValid()) {
+            // Don't mutate the data in the getter, but do not return an invalid world.
+            return null;
+        }
         return this.worldOverride;
     }
 
@@ -957,8 +963,10 @@ public class LocalSession {
     public void dispatchCUISelection(Actor actor) {
         checkNotNull(actor);
 
-        if (!hasCUISupport && useServerCUI) {
-            updateServerCUI(actor);
+        if (!hasCUISupport) {
+            if (useServerCUI) {
+                updateServerCUI(actor);
+            }
             return;
         }
 
@@ -999,10 +1007,14 @@ public class LocalSession {
     /**
      * Handle a CUI initialization message.
      *
-     * @param text the message
+     * @param eventType the CUI event type
+     * @param args the CUI packet arguments
+     * @param actor the actor representing the sender
      */
-    public void handleCUIInitializationMessage(String text, Actor actor) {
-        checkNotNull(text);
+    public void handleCUIInitializationMessage(String eventType, List<String> args, Actor actor) {
+        checkNotNull(eventType);
+        checkNotNull(args);
+
         if (this.hasCUISupport) {
             // WECUI is a bit aggressive about re-initializing itself
             // the last attempt to touch handshakes didn't go well, so this will do... for now
@@ -1012,18 +1024,17 @@ public class LocalSession {
             return;
         }
 
-        String[] split = text.split("\\|", 2);
-        if (split.length > 1 && split[0].equalsIgnoreCase("v")) { // enough fields and right message
-            if (split[1].length() > 4) {
+        if (!args.isEmpty() && eventType.equalsIgnoreCase("v")) { // enough fields and right message
+            if (args.size() > 1) {
                 this.failedCuiAttempts++;
                 return;
             }
 
             int version;
             try {
-                version = Integer.parseInt(split[1]);
+                version = Integer.parseInt(args.getFirst());
             } catch (NumberFormatException e) {
-                WorldEdit.logger.warn("Error while reading CUI init message: " + e.getMessage());
+                WorldEdit.logger.warn("Error while reading CUI init message");
                 this.failedCuiAttempts++;
                 return;
             }
@@ -1031,6 +1042,22 @@ public class LocalSession {
             setCUIVersion(version);
             dispatchCUISelection(actor);
         }
+    }
+
+    /**
+     * Handle a CUI initialization message.
+     *
+     * @param text the message
+     * @deprecated Use {@link #handleCUIInitializationMessage(String, List, Actor)}
+     */
+    @Deprecated
+    public void handleCUIInitializationMessage(String text, Actor actor) {
+        checkNotNull(text);
+
+        String[] split = text.split("\\|");
+        List<String> args = split.length > 1 ? new ArrayList<>(Arrays.asList(Arrays.copyOfRange(split, 1, split.length))) : List.of();
+
+        handleCUIInitializationMessage(split[0], args, actor);
     }
 
     /**

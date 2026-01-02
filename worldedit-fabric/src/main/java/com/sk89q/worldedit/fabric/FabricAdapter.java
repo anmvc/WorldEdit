@@ -46,8 +46,9 @@ import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -55,6 +56,7 @@ import net.minecraft.world.level.BaseCommandBlock;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.phys.Vec3;
 import org.enginehub.linbus.tree.LinCompoundTag;
 
@@ -93,11 +95,11 @@ public final class FabricAdapter {
 
     public static Biome adapt(BiomeType biomeType) {
         return FabricWorldEdit.getRegistry(Registries.BIOME)
-            .getValue(ResourceLocation.parse(biomeType.id()));
+            .getValue(Identifier.parse(biomeType.id()));
     }
 
     public static BiomeType adapt(Biome biome) {
-        ResourceLocation id = FabricWorldEdit.getRegistry(Registries.BIOME).getKey(biome);
+        Identifier id = FabricWorldEdit.getRegistry(Registries.BIOME).getKey(biome);
         Objects.requireNonNull(id, "biome is not registered");
         return BiomeTypes.get(id.toString());
     }
@@ -207,12 +209,15 @@ public final class FabricAdapter {
             worldEdit = FabricTransmogrifier.transmogToWorldEdit(blockEntity.getBlockState());
         }
         // Save this outside the reference to ensure it doesn't mutate
-        CompoundTag savedNative = blockEntity.saveWithId(registries);
+        var tagValueOutput = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, registries);
+        blockEntity.saveWithId(tagValueOutput);
+        net.minecraft.nbt.CompoundTag savedNative = tagValueOutput.buildResult();
+
         return worldEdit.toBaseBlock(LazyReference.from(() -> NBTConverter.fromNative(savedNative)));
     }
 
     public static Block adapt(BlockType blockType) {
-        return FabricWorldEdit.getRegistry(Registries.BLOCK).getValue(ResourceLocation.parse(blockType.id()));
+        return FabricWorldEdit.getRegistry(Registries.BLOCK).getValue(Identifier.parse(blockType.id()));
     }
 
     public static BlockType adapt(Block block) {
@@ -220,7 +225,7 @@ public final class FabricAdapter {
     }
 
     public static Item adapt(ItemType itemType) {
-        return FabricWorldEdit.getRegistry(Registries.ITEM).getValue(ResourceLocation.parse(itemType.id()));
+        return FabricWorldEdit.getRegistry(Registries.ITEM).getValue(Identifier.parse(itemType.id()));
     }
 
     public static ItemType adapt(Item item) {
@@ -280,7 +285,7 @@ public final class FabricAdapter {
             return adaptPlayer(commandSourceStack.getPlayer());
         }
         if (FabricWorldEdit.inst.getConfig().commandBlockSupport && commandSourceStack.source instanceof BaseCommandBlock commandBlock) {
-            return new FabricBlockCommandSender(commandBlock);
+            return new FabricBlockCommandSender(commandBlock, commandSourceStack.getLevel(), commandSourceStack.getPosition());
         }
 
         return new FabricCommandSender(commandSourceStack);

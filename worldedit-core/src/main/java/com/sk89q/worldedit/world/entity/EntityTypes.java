@@ -49,6 +49,7 @@ public final class EntityTypes {
     @Nullable public static final EntityType BREEZE = get("minecraft:breeze");
     @Nullable public static final EntityType BREEZE_WIND_CHARGE = get("minecraft:breeze_wind_charge");
     @Nullable public static final EntityType CAMEL = get("minecraft:camel");
+    @Nullable public static final EntityType CAMEL_HUSK = get("minecraft:camel_husk");
     @Nullable public static final EntityType CAT = get("minecraft:cat");
     @Nullable public static final EntityType CAVE_SPIDER = get("minecraft:cave_spider");
     @Nullable public static final EntityType CHERRY_BOAT = get("minecraft:cherry_boat");
@@ -58,6 +59,7 @@ public final class EntityTypes {
     @Nullable public static final EntityType CHICKEN = get("minecraft:chicken");
     @Nullable public static final EntityType COD = get("minecraft:cod");
     @Nullable public static final EntityType COMMAND_BLOCK_MINECART = get("minecraft:command_block_minecart");
+    @Nullable public static final EntityType COPPER_GOLEM = get("minecraft:copper_golem");
     @Nullable public static final EntityType COW = get("minecraft:cow");
     @Nullable public static final EntityType CREAKING = get("minecraft:creaking");
     @Deprecated @Nullable public static final EntityType CREAKING_TRANSIENT = get("minecraft:creaking_transient");
@@ -93,6 +95,7 @@ public final class EntityTypes {
     @Nullable public static final EntityType GLOW_SQUID = get("minecraft:glow_squid");
     @Nullable public static final EntityType GOAT = get("minecraft:goat");
     @Nullable public static final EntityType GUARDIAN = get("minecraft:guardian");
+    @Nullable public static final EntityType HAPPY_GHAST = get("minecraft:happy_ghast");
     @Nullable public static final EntityType HOGLIN = get("minecraft:hoglin");
     @Nullable public static final EntityType HOPPER_MINECART = get("minecraft:hopper_minecart");
     @Nullable public static final EntityType HORSE = get("minecraft:horse");
@@ -107,15 +110,18 @@ public final class EntityTypes {
     @Nullable public static final EntityType JUNGLE_CHEST_BOAT = get("minecraft:jungle_chest_boat");
     @Nullable public static final EntityType LEASH_KNOT = get("minecraft:leash_knot");
     @Nullable public static final EntityType LIGHTNING_BOLT = get("minecraft:lightning_bolt");
+    @Nullable public static final EntityType LINGERING_POTION = get("minecraft:lingering_potion");
     @Nullable public static final EntityType LLAMA = get("minecraft:llama");
     @Nullable public static final EntityType LLAMA_SPIT = get("minecraft:llama_spit");
     @Nullable public static final EntityType MAGMA_CUBE = get("minecraft:magma_cube");
     @Nullable public static final EntityType MANGROVE_BOAT = get("minecraft:mangrove_boat");
     @Nullable public static final EntityType MANGROVE_CHEST_BOAT = get("minecraft:mangrove_chest_boat");
+    @Nullable public static final EntityType MANNEQUIN = get("minecraft:mannequin");
     @Nullable public static final EntityType MARKER = get("minecraft:marker");
     @Nullable public static final EntityType MINECART = get("minecraft:minecart");
     @Nullable public static final EntityType MOOSHROOM = get("minecraft:mooshroom");
     @Nullable public static final EntityType MULE = get("minecraft:mule");
+    @Nullable public static final EntityType NAUTILUS = get("minecraft:nautilus");
     @Nullable public static final EntityType OAK_BOAT = get("minecraft:oak_boat");
     @Nullable public static final EntityType OAK_CHEST_BOAT = get("minecraft:oak_chest_boat");
     @Nullable public static final EntityType OCELOT = get("minecraft:ocelot");
@@ -124,6 +130,7 @@ public final class EntityTypes {
     @Nullable public static final EntityType PALE_OAK_BOAT = get("minecraft:pale_oak_boat");
     @Nullable public static final EntityType PALE_OAK_CHEST_BOAT = get("minecraft:pale_oak_chest_boat");
     @Nullable public static final EntityType PANDA = get("minecraft:panda");
+    @Nullable public static final EntityType PARCHED = get("minecraft:parched");
     @Nullable public static final EntityType PARROT = get("minecraft:parrot");
     @Nullable public static final EntityType PHANTOM = get("minecraft:phantom");
     @Nullable public static final EntityType PIG = get("minecraft:pig");
@@ -132,7 +139,7 @@ public final class EntityTypes {
     @Nullable public static final EntityType PILLAGER = get("minecraft:pillager");
     @Nullable public static final EntityType PLAYER = get("minecraft:player");
     @Nullable public static final EntityType POLAR_BEAR = get("minecraft:polar_bear");
-    @Nullable public static final EntityType POTION = get("minecraft:potion");
+    @Deprecated @Nullable public static final EntityType POTION = get("minecraft:potion");
     @Nullable public static final EntityType PUFFERFISH = get("minecraft:pufferfish");
     @Nullable public static final EntityType RABBIT = get("minecraft:rabbit");
     @Nullable public static final EntityType RAVAGER = get("minecraft:ravager");
@@ -151,6 +158,7 @@ public final class EntityTypes {
     @Nullable public static final EntityType SPAWNER_MINECART = get("minecraft:spawner_minecart");
     @Nullable public static final EntityType SPECTRAL_ARROW = get("minecraft:spectral_arrow");
     @Nullable public static final EntityType SPIDER = get("minecraft:spider");
+    @Nullable public static final EntityType SPLASH_POTION = get("minecraft:splash_potion");
     @Nullable public static final EntityType SPRUCE_BOAT = get("minecraft:spruce_boat");
     @Nullable public static final EntityType SPRUCE_CHEST_BOAT = get("minecraft:spruce_chest_boat");
     @Nullable public static final EntityType SQUID = get("minecraft:squid");
@@ -178,6 +186,7 @@ public final class EntityTypes {
     @Nullable public static final EntityType ZOGLIN = get("minecraft:zoglin");
     @Nullable public static final EntityType ZOMBIE = get("minecraft:zombie");
     @Nullable public static final EntityType ZOMBIE_HORSE = get("minecraft:zombie_horse");
+    @Nullable public static final EntityType ZOMBIE_NAUTILUS = get("minecraft:zombie_nautilus");
     @Deprecated @Nullable public static final EntityType ZOMBIE_PIGMAN = get("minecraft:zombie_pigman");
     @Nullable public static final EntityType ZOMBIE_VILLAGER = get("minecraft:zombie_villager");
     @Nullable public static final EntityType ZOMBIFIED_PIGLIN = get("minecraft:zombified_piglin");

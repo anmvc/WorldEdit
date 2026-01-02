@@ -1,7 +1,58 @@
+7.3.18
+- Added support for 1.21.11
+- Improved rotation of special rail blocks (activator, detector, powered, etc)
+
+7.3.17
+- Added support for 1.21.9 & 1.21.10
+- Improved rotation of crafter blocks
+- Improved rotation of rail blocks
+- Improved rotation of item frames
+- Fixed convex shapes behaving incorrectly when three points in a straight line are selected
+- Fixed a case where other mods/plugins can make errors less useful
+- Fixed errors caused by unloaded worlds being used as //world overrides
+
+7.3.16
+- Added support for 1.21.8
+
+7.3.15
+- Added support for 1.21.6 & 1.21.7
+
+7.3.14
+- Fixed an issue where mixed NBT lists could cause errors when set to the world
+
+7.3.13
+- [Bukkit] Fixed issue affecting accuracy of legacy schematic loading in certain circumstances
+- [Fabric] Fixed an issue where in some configurations WorldEdit could not load in a server environment
+
+7.3.12
+- Added support for 1.21.5
+- Added ability to copy the block state string from the info tool output
+- Minor optimisation to memory usage of clipboards
+- Update underlying text library to improve 1.21.5 compatibility
+- Fixed non-persistent entities pasting in an invalid state
+- Add support for the new block_pos NBT properties on block-aligned entities
+- [Fabric, NeoForge] Fixed issue affecting accuracy of legacy schematic loading in certain circumstances
+- [Fabric, NeoForge] Split out the WorldEdit CUI protocol into a separate module to work around a Fabric/NeoForge API issue
+
+7.3.11
+- Added //mirror as an alias for //flip
+- Fixed an issue where tree generation can get incorrect world state, impacting generation
+- Fixed masks for biome operations only applying to //setbiome
+- Fixed some bugs in the snapshot system
+- Fixed CUI packets being sent to clients unnecessarily
+- Fixed cone generation with negative heights
+- Fixed world height off-by-one discrepancy since change in Minecraft 1.21.3
+- Fixed cases where the task executor would not be shut down correctly
+- [NeoForge] Fixed legacy blocks failing to load in some instances
+
 7.3.10
 - Added support for 1.21.4
 - Improved a few translation lines relating to URLs and newlines
 - Fixed issues relating to block entities in generated features and structures
+- Added support for pale oak tree variants in the tree commands
+- [Paper] Fixed loading extra jars from the WorldEdit folder with Paper's remapping
+- [NeoForge] Fixed NeoForge's platform name listing "Forge" instead of "NeoForge"
+- [Fabric] Worked around an error caused by other mods bundling old versions of the Fabric Permissions API that are incompatible with MC 1.21.4
 
 7.3.9
 - Added support for 1.21.3

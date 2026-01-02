@@ -561,4 +561,9 @@ public class BukkitWorld extends AbstractWorld {
         }
         return true;
     }
+
+    @Override
+    public boolean isValid() {
+        return worldRef.get() != null;
+    }
 }

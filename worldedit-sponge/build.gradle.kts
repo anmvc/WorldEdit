@@ -1,4 +1,4 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import buildlogic.internalVersion
 import org.spongepowered.gradle.plugin.config.PluginLoaders
 import org.spongepowered.plugin.metadata.model.PluginDependency
 
@@ -41,7 +41,7 @@ sponge {
             version("1.0")
         }
         displayName("WorldEdit")
-        version(project.ext["internalVersion"].toString())
+        version = internalVersion
         entrypoint("com.sk89q.worldedit.sponge.SpongeWorldEdit")
         description("WorldEdit is an easy-to-use in-game world editor for Minecraft, supporting both single- and multi-player.")
         links {
@@ -76,7 +76,7 @@ configure<BasePluginExtension> {
     archivesName.set("${project.name}-api${libs.versions.sponge.api.major.get()}")
 }
 
-tasks.named<ShadowJar>("shadowJar") {
+tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
     dependencies {
         include(dependency("org.bstats:"))
         include(dependency("org.antlr:antlr4-runtime"))
@@ -89,4 +89,10 @@ tasks.named<ShadowJar>("shadowJar") {
 }
 tasks.named("assemble").configure {
     dependsOn("shadowJar")
+}
+
+configure<PublishingExtension> {
+    publications.named<MavenPublication>("maven") {
+        from(components["java"])
+    }
 }

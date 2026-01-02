@@ -29,12 +29,14 @@ import com.sk89q.worldedit.util.Location;
 import com.sk89q.worldedit.util.concurrency.LazyReference;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.TagValueOutput;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.InvocationHandler;
@@ -42,6 +44,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Predicate;
 
 public class NeoForgeServerLevelDelegateProxy implements InvocationHandler, AutoCloseable {
 
@@ -82,7 +85,7 @@ public class NeoForgeServerLevelDelegateProxy implements InvocationHandler, Auto
     }
 
     private BlockState getBlockState(BlockPos blockPos) {
-        return NeoForgeAdapter.adapt(this.editSession.getBlock(NeoForgeAdapter.adapt(blockPos)));
+        return NeoForgeAdapter.adapt(this.editSession.getBlockWithBuffer(NeoForgeAdapter.adapt(blockPos)));
     }
 
     private boolean setBlock(BlockPos blockPos, BlockState blockState) {
@@ -133,7 +136,11 @@ public class NeoForgeServerLevelDelegateProxy implements InvocationHandler, Auto
         for (Map.Entry<BlockVector3, BlockEntity> entry : createdBlockEntities.entrySet()) {
             BlockVector3 blockPos = entry.getKey();
             BlockEntity blockEntity = entry.getValue();
-            net.minecraft.nbt.CompoundTag tag = blockEntity.saveWithId(serverLevel.registryAccess());
+
+            var tagValueOutput = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, serverLevel.registryAccess());
+            blockEntity.saveWithId(tagValueOutput);
+
+            net.minecraft.nbt.CompoundTag tag = tagValueOutput.buildResult();
             editSession.setBlock(
                 blockPos,
                 NeoForgeAdapter.adapt(blockEntity.getBlockState())
@@ -148,6 +155,13 @@ public class NeoForgeServerLevelDelegateProxy implements InvocationHandler, Auto
             case "getBlockState", "m_8055_" -> {
                 if (args.length == 1 && args[0] instanceof BlockPos blockPos) {
                     return getBlockState(blockPos);
+                }
+            }
+            case "isStateAtPosition", "m_7433_" -> {
+                if (args.length == 2 && args[0] instanceof BlockPos blockPos && args[1] instanceof Predicate) {
+                    @SuppressWarnings("unchecked")
+                    Predicate<BlockState> predicate = (Predicate<BlockState>) args[1];
+                    return predicate.test(getBlockState(blockPos));
                 }
             }
             case "getBlockEntity", "m_7702_" -> {

@@ -34,7 +34,6 @@ import com.sk89q.worldedit.extension.platform.PlatformManager;
 import com.sk89q.worldedit.internal.anvil.ChunkDeleter;
 import com.sk89q.worldedit.internal.event.InteractionDebouncer;
 import com.sk89q.worldedit.internal.util.LogManagerCompat;
-import com.sk89q.worldedit.neoforge.net.handler.WECUIPacketHandler;
 import com.sk89q.worldedit.util.Direction;
 import com.sk89q.worldedit.util.Location;
 import com.sk89q.worldedit.world.biome.BiomeCategory;
@@ -53,7 +52,7 @@ import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -77,6 +76,8 @@ import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import org.apache.logging.log4j.Logger;
 import org.enginehub.piston.Command;
+import org.enginehub.worldeditcui.protocol.CUIPacket;
+import org.enginehub.worldeditcui.protocol.CUIPacketHandler;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -101,7 +102,6 @@ public class NeoForgeWorldEdit {
 
     private static final Logger LOGGER = LogManagerCompat.getLogger();
     public static final String MOD_ID = "worldedit";
-    public static final String CUI_PLUGIN_CHANNEL = "cui";
 
     private NeoForgePermissionsProvider provider;
 
@@ -118,7 +118,6 @@ public class NeoForgeWorldEdit {
         inst = this;
 
         modBus.addListener(this::init);
-        modBus.register(WECUIPacketHandler.class);
 
         NeoForge.EVENT_BUS.register(ThreadSafeCache.getInstance());
         NeoForge.EVENT_BUS.register(this);
@@ -136,6 +135,8 @@ public class NeoForgeWorldEdit {
                 throw new UncheckedIOException(e);
             }
         }
+
+        CUIPacketHandler.instance().registerServerboundHandler(this::onCuiPacket);
 
         setupPlatform();
 
@@ -155,7 +156,7 @@ public class NeoForgeWorldEdit {
 
     private void setupRegistries(MinecraftServer server) {
         // Blocks
-        for (ResourceLocation name : BuiltInRegistries.BLOCK.keySet()) {
+        for (Identifier name : BuiltInRegistries.BLOCK.keySet()) {
             String key = name.toString();
             if (BlockType.REGISTRY.get(key) == null) {
                 BlockType.REGISTRY.register(key, new BlockType(key,
@@ -163,21 +164,21 @@ public class NeoForgeWorldEdit {
             }
         }
         // Items
-        for (ResourceLocation name : BuiltInRegistries.ITEM.keySet()) {
+        for (Identifier name : BuiltInRegistries.ITEM.keySet()) {
             String key = name.toString();
             if (ItemType.REGISTRY.get(key) == null) {
                 ItemType.REGISTRY.register(key, new ItemType(key));
             }
         }
         // Entities
-        for (ResourceLocation name : BuiltInRegistries.ENTITY_TYPE.keySet()) {
+        for (Identifier name : BuiltInRegistries.ENTITY_TYPE.keySet()) {
             String key = name.toString();
             if (EntityType.REGISTRY.get(key) == null) {
                 EntityType.REGISTRY.register(key, new EntityType(key));
             }
         }
         // Biomes
-        for (ResourceLocation name : server.registryAccess().lookupOrThrow(Registries.BIOME).keySet()) {
+        for (Identifier name : server.registryAccess().lookupOrThrow(Registries.BIOME).keySet()) {
             String key = name.toString();
             if (BiomeType.REGISTRY.get(key) == null) {
                 BiomeType.REGISTRY.register(key, new BiomeType(key));
@@ -212,14 +213,14 @@ public class NeoForgeWorldEdit {
             }
         });
         // Features
-        for (ResourceLocation name : server.registryAccess().lookupOrThrow(Registries.CONFIGURED_FEATURE).keySet()) {
+        for (Identifier name : server.registryAccess().lookupOrThrow(Registries.CONFIGURED_FEATURE).keySet()) {
             String key = name.toString();
             if (ConfiguredFeatureType.REGISTRY.get(key) == null) {
                 ConfiguredFeatureType.REGISTRY.register(key, new ConfiguredFeatureType(key));
             }
         }
         // Structures
-        for (ResourceLocation name : server.registryAccess().lookupOrThrow(Registries.STRUCTURE).keySet()) {
+        for (Identifier name : server.registryAccess().lookupOrThrow(Registries.STRUCTURE).keySet()) {
             String key = name.toString();
             if (StructureType.REGISTRY.get(key) == null) {
                 StructureType.REGISTRY.register(key, new StructureType(key));
@@ -279,7 +280,7 @@ public class NeoForgeWorldEdit {
     }
 
     private boolean skipInteractionEvent(Player player, InteractionHand hand) {
-        return skipEvents() || hand != InteractionHand.MAIN_HAND || player.level().isClientSide || !(player instanceof ServerPlayer);
+        return skipEvents() || hand != InteractionHand.MAIN_HAND || player.level().isClientSide() || !(player instanceof ServerPlayer);
     }
 
     @SubscribeEvent
@@ -291,7 +292,7 @@ public class NeoForgeWorldEdit {
         ServerPlayer playerEntity = (ServerPlayer) event.getEntity();
         WorldEdit we = WorldEdit.getInstance();
         NeoForgePlayer player = adaptPlayer(playerEntity);
-        NeoForgeWorld world = getWorld((ServerLevel) playerEntity.level());
+        NeoForgeWorld world = getWorld(playerEntity.level());
         Direction direction = NeoForgeAdapter.adaptEnumFacing(event.getFace());
 
         BlockPos blockPos = event.getPos();
@@ -314,7 +315,7 @@ public class NeoForgeWorldEdit {
         ServerPlayer playerEntity = (ServerPlayer) event.getEntity();
         WorldEdit we = WorldEdit.getInstance();
         NeoForgePlayer player = adaptPlayer(playerEntity);
-        NeoForgeWorld world = getWorld((ServerLevel) playerEntity.level());
+        NeoForgeWorld world = getWorld(playerEntity.level());
         Direction direction = NeoForgeAdapter.adaptEnumFacing(event.getFace());
 
         BlockPos blockPos = event.getPos();
@@ -374,7 +375,7 @@ public class NeoForgeWorldEdit {
     @SubscribeEvent
     public void onCommandEvent(CommandEvent event) throws CommandSyntaxException {
         ParseResults<CommandSourceStack> parseResults = event.getParseResults();
-        if (parseResults.getContext().getSource().getEntity() instanceof ServerPlayer player && player.level().isClientSide) {
+        if (parseResults.getContext().getSource().getEntity() instanceof ServerPlayer player && player.level().isClientSide()) {
             return;
         }
         if (parseResults.getContext().getCommand() != CommandWrapper.FAKE_COMMAND) {
@@ -395,6 +396,16 @@ public class NeoForgeWorldEdit {
             WorldEdit.getInstance().getEventBus()
                 .post(new SessionIdleEvent(new NeoForgePlayer.SessionKeyImpl(player)));
         }
+    }
+
+    private void onCuiPacket(CUIPacket payload, CUIPacketHandler.PacketContext context) {
+        if (!(context.player() instanceof ServerPlayer player)) {
+            // Ignore - this is not a server-bound packet
+            return;
+        }
+        NeoForgePlayer actor = NeoForgeAdapter.adaptPlayer(player);
+        LocalSession session = WorldEdit.getInstance().getSessionManager().get(actor);
+        session.handleCUIInitializationMessage(payload.eventType(), payload.args(), actor);
     }
 
     /**

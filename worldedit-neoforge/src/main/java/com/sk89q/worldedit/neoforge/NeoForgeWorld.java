@@ -64,7 +64,6 @@ import com.sk89q.worldedit.world.generation.StructureType;
 import com.sk89q.worldedit.world.item.ItemTypes;
 import com.sk89q.worldedit.world.weather.WeatherType;
 import com.sk89q.worldedit.world.weather.WeatherTypes;
-import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
@@ -72,11 +71,13 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.data.worldgen.features.EndFeatures;
 import net.minecraft.data.worldgen.features.TreeFeatures;
+import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.util.RandomSource;
+import net.minecraft.util.Util;
 import net.minecraft.util.thread.BlockableEventLoop;
 import net.minecraft.world.Clearable;
 import net.minecraft.world.InteractionHand;
@@ -105,9 +106,9 @@ import net.minecraft.world.level.storage.LevelData;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import net.minecraft.world.level.storage.PrimaryLevelData;
 import net.minecraft.world.level.storage.ServerLevelData;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
-import org.enginehub.linbus.common.LinTagId;
 import org.enginehub.linbus.tree.LinCompoundTag;
 
 import java.lang.ref.WeakReference;
@@ -137,7 +138,7 @@ public class NeoForgeWorld extends AbstractWorld {
 
     private static final RandomSource random = RandomSource.create();
 
-    private static ResourceLocation getDimensionRegistryKey(ServerLevel world) {
+    private static Identifier getDimensionRegistryKey(ServerLevel world) {
         return Objects.requireNonNull(world.getServer(), "server cannot be null")
             .registryAccess()
             .lookupOrThrow(Registries.DIMENSION_TYPE)
@@ -243,7 +244,7 @@ public class NeoForgeWorld extends AbstractWorld {
         biomes.getAndSetUnchecked(
             position.x() & 3, position.y() & 3, position.z() & 3,
             getWorld().registryAccess().lookupOrThrow(Registries.BIOME)
-                .getOrThrow(ResourceKey.create(Registries.BIOME, ResourceLocation.parse(biome.id())))
+                .getOrThrow(ResourceKey.create(Registries.BIOME, Identifier.parse(biome.id())))
         );
         chunk.markUnsaved();
         return true;
@@ -263,7 +264,7 @@ public class NeoForgeWorld extends AbstractWorld {
             return false;
         }
         fakePlayer.setItemInHand(InteractionHand.MAIN_HAND, stack);
-        fakePlayer.absMoveTo(position.x(), position.y(), position.z(),
+        fakePlayer.absSnapTo(position.x(), position.y(), position.z(),
                 (float) face.toVector().toYaw(), (float) face.toVector().toPitch());
         final BlockPos blockPos = NeoForgeAdapter.toBlockPos(position);
         final BlockHitResult rayTraceResult = new BlockHitResult(NeoForgeAdapter.toVec3(position),
@@ -344,7 +345,6 @@ public class NeoForgeWorld extends AbstractWorld {
                     originalWorld.dimensionTypeRegistration(),
                     originalWorld.getChunkSource().getGenerator()
                 ),
-                new WorldEditGenListener(),
                 originalWorld.isDebug(),
                 seed,
                 // No spawners are needed for this world.
@@ -397,7 +397,9 @@ public class NeoForgeWorld extends AbstractWorld {
             BlockStateHolder<?> state = NeoForgeAdapter.adapt(chunk.getBlockState(pos));
             BlockEntity blockEntity = chunk.getBlockEntity(pos);
             if (blockEntity != null) {
-                net.minecraft.nbt.CompoundTag tag = blockEntity.saveWithId(serverWorld.registryAccess());
+                var tagValueOutput = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, getWorld().registryAccess());
+                blockEntity.saveWithId(tagValueOutput);
+                net.minecraft.nbt.CompoundTag tag = tagValueOutput.buildResult();
                 state = state.toBaseBlock(LazyReference.from(() -> NBTConverter.fromNative(tag)));
             }
             extent.setBlock(vec, state.toBaseBlock());
@@ -446,6 +448,8 @@ public class NeoForgeWorld extends AbstractWorld {
             case MANGROVE -> TreeFeatures.MANGROVE;
             case TALL_MANGROVE -> TreeFeatures.TALL_MANGROVE;
             case CHERRY -> TreeFeatures.CHERRY;
+            case PALE_OAK -> TreeFeatures.PALE_OAK;
+            case PALE_OAK_CREAKING -> TreeFeatures.PALE_OAK_CREAKING;
             case RANDOM -> createTreeFeatureGenerator(TreeType.values()[ThreadLocalRandom.current().nextInt(TreeType.values().length)]);
             default -> null;
         };
@@ -472,7 +476,7 @@ public class NeoForgeWorld extends AbstractWorld {
     @Override
     public boolean generateFeature(ConfiguredFeatureType type, EditSession editSession, BlockVector3 position) {
         ServerLevel world = getWorld();
-        ConfiguredFeature<?, ?> feature = world.registryAccess().lookupOrThrow(Registries.CONFIGURED_FEATURE).getValue(ResourceLocation.tryParse(type.id()));
+        ConfiguredFeature<?, ?> feature = world.registryAccess().lookupOrThrow(Registries.CONFIGURED_FEATURE).getValue(Identifier.tryParse(type.id()));
         ServerChunkCache chunkManager = world.getChunkSource();
         try (NeoForgeServerLevelDelegateProxy.LevelAndProxy levelProxy =
                  NeoForgeServerLevelDelegateProxy.newInstance(editSession, world)) {
@@ -486,7 +490,7 @@ public class NeoForgeWorld extends AbstractWorld {
     public boolean generateStructure(StructureType type, EditSession editSession, BlockVector3 position) {
         ServerLevel world = getWorld();
         Registry<Structure> structureRegistry = world.registryAccess().lookupOrThrow(Registries.STRUCTURE);
-        Structure structure = structureRegistry.getValue(ResourceLocation.tryParse(type.id()));
+        Structure structure = structureRegistry.getValue(Identifier.tryParse(type.id()));
         if (structure == null) {
             return false;
         }
@@ -617,12 +621,12 @@ public class NeoForgeWorld extends AbstractWorld {
 
     @Override
     public int getMaxY() {
-        return getWorld().getMaxY() - 1;
+        return getWorld().getMaxY();
     }
 
     @Override
     public BlockVector3 getSpawnPosition() {
-        return NeoForgeAdapter.adapt(getWorld().getLevelData().getSpawnPos());
+        return NeoForgeAdapter.adapt(getWorld().getLevelData().getRespawnData().pos());
     }
 
     @Override
@@ -640,7 +644,9 @@ public class NeoForgeWorld extends AbstractWorld {
         BlockEntity tile = getWorld().getChunk(pos).getBlockEntity(pos);
 
         if (tile != null) {
-            net.minecraft.nbt.CompoundTag tag = tile.saveWithId(getWorld().registryAccess());
+            var tagValueOutput = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, getWorld().registryAccess());
+            tile.saveWithId(tagValueOutput);
+            net.minecraft.nbt.CompoundTag tag = tagValueOutput.buildResult();
             return getBlock(position).toBaseBlock(
                 LazyReference.from(() -> NBTConverter.fromNative(tag))
             );
@@ -712,7 +718,7 @@ public class NeoForgeWorld extends AbstractWorld {
         tag.putString("id", entityId);
 
         net.minecraft.world.entity.Entity createdEntity = EntityType.loadEntityRecursive(tag, world, EntitySpawnReason.COMMAND, (loadedEntity) -> {
-            loadedEntity.absMoveTo(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
+            loadedEntity.absSnapTo(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
             return loadedEntity;
         });
         if (createdEntity != null) {
@@ -728,13 +734,11 @@ public class NeoForgeWorld extends AbstractWorld {
         }
 
         // Adapted from net.minecraft.world.entity.EntityType#loadEntityRecursive
-        if (tag.contains("Passengers", LinTagId.LIST.id())) {
-            net.minecraft.nbt.ListTag nbttaglist = tag.getList("Passengers", LinTagId.COMPOUND.id());
-
+        tag.getList("Passengers").ifPresent(nbttaglist -> {
             for (int i = 0; i < nbttaglist.size(); ++i) {
-                removeUnwantedEntityTagsRecursively(nbttaglist.getCompound(i));
+                removeUnwantedEntityTagsRecursively(nbttaglist.getCompoundOrEmpty(i));
             }
-        }
+        });
     }
 
     @Override
@@ -745,5 +749,10 @@ public class NeoForgeWorld extends AbstractWorld {
                 return NeoForgeAdapter.adapt(getExtent().getBlock(vector)).getBlock() instanceof LiquidBlock;
             }
         };
+    }
+
+    @Override
+    public boolean isValid() {
+        return worldRef.get() != null;
     }
 }

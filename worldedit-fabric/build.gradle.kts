@@ -1,6 +1,5 @@
+import buildlogic.internalVersion
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import net.fabricmc.loom.api.LoomGradleExtensionAPI
-import net.fabricmc.loom.configuration.FabricApiExtension
 import net.fabricmc.loom.task.RemapJarTask
 import net.fabricmc.loom.task.RunGameTask
 
@@ -40,7 +39,8 @@ dependencies {
         parchment("org.parchmentmc.data:parchment-${libs.versions.parchment.minecraft.get()}:${libs.versions.parchment.mappings.get()}@zip")
     })
     "modImplementation"(libs.fabric.loader)
-
+    "include"(libs.cuiProtocol.fabric)
+    "modImplementation"(libs.cuiProtocol.fabric)
 
     // [1] Load the API dependencies from the fabric mod json...
     @Suppress("UNCHECKED_CAST")
@@ -52,7 +52,7 @@ dependencies {
         .toSet()
     // [2] Request the matching dependency from fabric-loom
     for (wantedDependency in wantedDependencies) {
-        val dep = project.the<FabricApiExtension>().module(wantedDependency, libs.versions.fabric.api.get())
+        val dep = fabricApi.module(wantedDependency, libs.versions.fabric.api.get())
         "include"(dep)
         "modImplementation"(dep)
     }
@@ -76,11 +76,12 @@ configure<PublishingExtension> {
 }
 
 tasks.named<Copy>("processResources") {
-    val internalVersion = project.ext["internalVersion"]
+    // Avoid carrying project reference into task execution
+    val internalVersion = project.internalVersion
     // this will ensure that this task is redone when the versions change.
     inputs.property("version", internalVersion)
     filesMatching("fabric.mod.json") {
-        this.expand("version" to internalVersion)
+        this.expand(mapOf("version" to internalVersion.get()))
     }
 }
 

@@ -1,3 +1,5 @@
+import buildlogic.ArtifactPriority
+import buildlogic.internalVersion
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import io.papermc.paperweight.userdev.attribute.Obfuscation
 
@@ -11,39 +13,41 @@ platform {
     includeClasspath = true
 }
 
-val localImplementation = configurations.create("localImplementation") {
+val localImplementation = configurations.dependencyScope("localImplementation") {
     description = "Dependencies used locally, but provided by the runtime Bukkit implementation"
-    isCanBeConsumed = false
-    isCanBeResolved = false
 }
-configurations["compileOnly"].extendsFrom(localImplementation)
-configurations["testImplementation"].extendsFrom(localImplementation)
+configurations.named("compileOnly") {
+    extendsFrom(localImplementation.get())
+}
+configurations.named("testImplementation") {
+    extendsFrom(localImplementation.get())
+}
 
-val adapters = configurations.create("adapters") {
+val adaptersScope = configurations.dependencyScope("adaptersScope") {
     description = "Adapters to include in the JAR"
-    isCanBeConsumed = false
-    isCanBeResolved = true
+}
+val adapters = configurations.resolvable("adapters") {
+    extendsFrom(adaptersScope.get())
+    description = "Adapters to include in the JAR (resolvable)"
     shouldResolveConsistentlyWith(configurations["runtimeClasspath"])
     attributes {
-        attribute(Obfuscation.OBFUSCATION_ATTRIBUTE,
-            if ((project.findProperty("enginehub.obf.none") as String?).toBoolean()) {
-                objects.named(Obfuscation.NONE)
-            } else {
-                objects.named(Obfuscation.OBFUSCATED)
-            }
-        )
+        if ((project.findProperty("enginehub.obf.none") as String?).toBoolean()) {
+            // If we're configured to not output obfuscated, request none
+            attribute(Obfuscation.OBFUSCATION_ATTRIBUTE, objects.named(Obfuscation.NONE))
+        } else {
+            // Otherwise, use the primary artifact, which may or may not be obfuscated
+            attribute(ArtifactPriority.ATTRIBUTE, objects.named(ArtifactPriority.PRIMARY))
+        }
     }
 }
 
 dependencies {
     "api"(project(":worldedit-core"))
     "api"(project(":worldedit-libs:bukkit"))
-    // Technically this is api, but everyone should already have some form of the bukkit API
-    // Avoid pulling in another one, especially one so outdated.
-    "localImplementation"(libs.spigot) {
+
+    "localImplementation"(libs.paperApi) {
         exclude("junit", "junit")
     }
-
     "localImplementation"(platform(libs.log4j.bom)) {
         because("Spigot provides Log4J (sort of, not in API, implicitly part of server)")
     }
@@ -55,29 +59,27 @@ dependencies {
     "testCompileOnly"(libs.jetbrains.annotations) {
         because("Resolving Spigot annotations")
     }
-    "compileOnly"(libs.paperApi) {
-        exclude("junit", "junit")
-    }
     "implementation"(libs.paperLib)
     "compileOnly"(libs.dummypermscompat)
     "implementation"(libs.bstats.bukkit)
     "implementation"(libs.fastutil)
 
     project.project(":worldedit-bukkit:adapters").subprojects.forEach {
-        "adapters"(project(it.path))
+        "adaptersScope"(project(it.path))
     }
 }
 
 tasks.named<Copy>("processResources") {
-    val internalVersion = project.ext["internalVersion"]
+    // Avoid carrying project reference into task execution
+    val internalVersion = project.internalVersion
     inputs.property("internalVersion", internalVersion)
     filesMatching("plugin.yml") {
-        expand("internalVersion" to internalVersion)
+        expand(mapOf("internalVersion" to internalVersion.get()))
     }
 }
 
 tasks.named<ShadowJar>("shadowJar") {
-    configurations.add(adapters)
+    configurations.add(adapters.get())
     dependencies {
         // In tandem with not bundling log4j, we shouldn't relocate base package here.
         // relocate("org.apache.logging", "com.sk89q.worldedit.log4j")
